@@ -7,14 +7,27 @@ window.onload = function() {
 	// 	socket.emit('setColor', color.hex);
 	// })
 
-	colors = ['#ffffff', "#000fff", "#fff000"];
+	colors = [];
+
+	for (var i=0;i<150;i++) {
+		colors.push(getRandomColor());
+	}
 
 	svgContainer = d3.select("body").append("svg")
-	.attr("width", 200)
-	.attr("height", 200);
+	.attr("width", 1000)
+	.attr("height", 1000);
 
 	update(svgContainer);
 
+}
+
+function getRandomColor() {
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
 }
 
 function update(svg) {
@@ -26,16 +39,17 @@ function update(svg) {
 
 	var rectsattributes = rects
 	.attr("x", function(d, i) {
-		return i*10;
+		return i%30*27;
 	})
 	.attr("y", function(d, i) {
-		return 0;
+		// console.log(i/10);
+		return parseInt(i/30)*27;
 	})
 	.attr("width", function(d) {
-		return 10;
+		return 25;
 	})
 	.attr("height", function(d) {
-		return 10;
+		return 25;
 	})
 	.style("fill", function (d) {
 		return d;

@@ -85,7 +85,7 @@ board.on("ready", function() {
             });
 
             socket.on('getColor', function() {
-                socket.emit('colorData', strip);
+                pushData();
             });
 
 
@@ -103,9 +103,13 @@ board.on("ready", function() {
 // I'm too lazy to move all of this to a helper module :(
 
 function pushData() {
-    console.log(strip);
     strip.show();
-    io.sockets.emit('colorData', strip);
+    var stripData = [];
+    for (var i=0;i<150;i++) {
+        stripData.push(strip.pixel(i).color());
+    }
+    console.log(strip.pixel(35).color());
+    io.sockets.emit('colorData', stripData);
 }
 
 // Parse time object and display it on the strip at the startPixel 

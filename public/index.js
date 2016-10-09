@@ -1,21 +1,27 @@
 var svgContainer;
 
 window.onload = function() {
-	svgContainer = d3.select("body").append("svg")
-	.attr("width", 1000)
-	.attr("height", 1000);
-
 	var socket = io();
 
-	socket.on('colorData', function(data) {
-		update(data);
+	socket.emit('load');
+	socket.on('load', function(cwColor) {
+		cw.color(cwColor);
 	})
 
 	var cw = Raphael.colorwheel($(".colorwheel")[0], 300, 180);
  	cw.onchange(function(color) {
- 		// console.log(gammaCorrection(color.hex));
  		socket.emit('setColor', gammaCorrection(color.hex));
  	})
+
+	svgContainer = d3.select("body").append("svg")
+	.attr("width", 1000)
+	.attr("height", 1000);
+
+	socket.on('colorData', function(data) {
+		// cw.color(data[149].hexcode);
+		console.log(data[149].hexcode);
+		update(data);
+	})
 }
 
 function update(colors) {
@@ -28,8 +34,8 @@ function update(colors) {
 	.data(colors);
 
 	rects.style("fill", function(d) {
-		console.log(gammaCorrection(d.hexcode));
-		return gammaCorrection(d.hexcode);
+		// console.log(gammaCorrection(d.hexcode));
+		return d.hexcode;
 	})
 
 	rects.enter().append("rect")

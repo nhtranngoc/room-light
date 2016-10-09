@@ -14,10 +14,33 @@ var strip = rainbowInterval = null;
 var colorGlobal;
 var weatherGlobal;
 
+// =======================================================================================
+
+// =============================== SERVER LOGIC ==========================================
+
+// =======================================================================================
+
 app.use(express.static(__dirname + '/public'));
+
 app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/public/index.html');
 });
+
+app.get('/sleep', function(req, res) {
+    var q = req.query.start;
+    if (strip) {
+        if (q == 'true') {
+            console.log("GO TO SLEEP PLS");
+            updateColor("#00000C");
+            pushData();
+        } else if (q == 'false') {
+            console.log("WAKE UP SUNSHINE");
+            updateColor("#ffffff");
+            pushData();
+        }
+        res.sendStatus(200);
+    }
+})
 
 http.listen(port);
 console.log('Server listening at port ' + port);
@@ -31,9 +54,13 @@ var forecast = new Forecast({
         minutes: 27,
         seconds: 45
     }
-})
+});
 
-// Handle led strip logic
+// =======================================================================================
+
+// =============================== STRIP LOGIC ===========================================
+
+// =======================================================================================
 board.on("ready", function() {
 	strip = new pixel.Strip({
 		board: this,
@@ -73,14 +100,7 @@ board.on("ready", function() {
 
             socket.on('setColor', function(colorString) {
                 console.log("Setting color " + colorString);
-                // Holy mother of performance problems.
-                for (var i=36;i<150;i++) {
-                    strip.pixel(i).color(colorString);
-                }
-                colorGlobal = colorString;
-                if (weatherGlobal) {
-                    showWeather(weatherGlobal, 0);
-                }
+                updateColor(colorString);
                 pushData();
             });
 
@@ -88,7 +108,9 @@ board.on("ready", function() {
                 pushData();
             });
 
-
+            io.on('load', function() {
+                io.sockets.emit('load', colorGlobal);
+            })
         // Update both strip and front-end
     })
 
@@ -102,13 +124,24 @@ board.on("ready", function() {
 // =======================================================================================
 // I'm too lazy to move all of this to a helper module :(
 
+function updateColor(color) {
+    // Holy mother of performance problems.
+    for (var i=36;i<150;i++) {
+        strip.pixel(i).color(color);
+    }
+    colorGlobal = color;
+    if (weatherGlobal) {
+        showWeather(weatherGlobal, 0);
+    }
+}
+
 function pushData() {
     strip.show();
     var stripData = [];
     for (var i=0;i<150;i++) {
         stripData.push(strip.pixel(i).color());
     }
-    console.log(strip.pixel(35).color());
+    // console.log(strip.pixel(35).color());
     io.sockets.emit('colorData', stripData);
 }
 
@@ -163,9 +196,10 @@ function showWeather(weather, startPixel) {
         if(i<tempScale) {
             weatherColors.push(colorScale(i, 1))
         } else if (i == tempScale) {
-            var remain = (hourlyTemp - tempScale)/resolution; //Temperature between this scale and the next
+            var remain = (hourlyTemp - ((tempScale*resolution)-20))/resolution; ////Temperature between this scale and the next
             // Value would be between 0 and 3.75 (current resolution);
             weatherColors.push(colorScale(i, remain));
+            console.log(remain);
         } else weatherColors.push("black");
     } // Convert to scale
 

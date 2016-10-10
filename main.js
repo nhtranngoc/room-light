@@ -40,7 +40,25 @@ app.get('/sleep', function(req, res) {
         }
         res.sendStatus(200);
     }
-})
+});
+
+app.get('/toggle', function(req, res) {
+    if (strip) {
+        // Get current state
+        var stateOn = strip.pixel(149).color().hexcode == "#000000" ? false : true;
+        console.log(strip.pixel(149).color().hexcode);
+
+        if (stateOn) {
+            updateColor("#000000");
+            pushData();
+        } else {
+            updateColor("#ffffff");
+            pushData();
+        }
+
+        res.sendStatus(200);
+    }
+});
 
 http.listen(port);
 console.log('Server listening at port ' + port);

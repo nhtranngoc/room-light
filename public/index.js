@@ -1,7 +1,8 @@
 var svgContainer;
+var socket;
 
 window.onload = function() {
-	var socket = io();
+	socket = io();
 
 	socket.emit('load');
 	socket.on('load', function(cwColor) {
@@ -22,6 +23,11 @@ window.onload = function() {
 		console.log(data[149].hexcode);
 		update(data);
 	})
+}
+
+function toggleSecondary() {
+	console.log("sent request to toggle secondary light");
+	socket.emit('secondary');
 }
 
 function update(colors) {

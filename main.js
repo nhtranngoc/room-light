@@ -5,14 +5,12 @@ var app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io').listen(http);
 var Forecast = require('forecast');
-var CronJob = require('cron').CronJob;
+// var CronJob = require('cron').CronJob; // Not using node-cron until the timeout bug has been fixed
 
 var port = 80;
 
 var board = new five.Board({repl: false});
-var strip = rainbowInterval = null;
-var colorGlobal;
-var weatherGlobal;
+var strip, RainbowInterval, ColorGlobal, WeatherGlobal, Counter, WhiteLED;
 
 // =======================================================================================
 
@@ -27,36 +25,56 @@ app.get('/', function(req, res) {
 });
 
 app.get('/sleep', function(req, res) {
-    var q = req.query.start;
-    if (strip) {
-        if (q == 'true') {
-            console.log("GO TO SLEEP PLS");
-            updateColor("#00000C");
-            pushData();
-        } else if (q == 'false') {
-            console.log("WAKE UP SUNSHINE");
-            updateColor("#ffffff");
-            pushData();
-        }
+    if (WhiteLED == null) {
         res.sendStatus(200);
+    } else {
+        var q = req.query.start;
+        if (strip) {
+            if (q == 'true') {
+                console.log("GO TO SLEEP PLS");
+                updateColor("#00000C");
+                pushData();
+                WhiteLED.off();
+            } else if (q == 'false') {
+                console.log("WAKE UP SUNSHINE");
+                updateColor("#ffffff");
+                pushData();
+                WhiteLED.on();
+            }
+            res.sendStatus(200);
+        }
     }
 });
 
+app.get('/madeline', function(req, res) {
+    if (WhiteLED) {
+        WhiteLED.off();
+        updateColor("#3A002A");
+        pushData();
+    }
+    res.sendStatus(200);
+});
+
 app.get('/toggle', function(req, res) {
-    if (strip) {
-        // Get current state
-        var stateOn = strip.pixel(149).color().hexcode == "#000000" ? false : true;
-        console.log(strip.pixel(149).color().hexcode);
-
-        if (stateOn) {
-            updateColor("#000000");
-            pushData();
-        } else {
-            updateColor("#ffffff");
-            pushData();
-        }
-
+    if (WhiteLED == null) {
         res.sendStatus(200);
+    } else {
+        if (strip) {
+            // Get current state
+            var stateOn = strip.pixel(149).color().hexcode == "#000000" ? false : true;
+            console.log(strip.pixel(149).color().hexcode);
+
+            if (stateOn) {
+                updateColor("#000000");
+                pushData();
+                WhiteLED.off();
+            } else {
+                updateColor("#ffffff");
+                pushData();
+                WhiteLED.on();
+            }
+            res.sendStatus(200);
+        }
     }
 });
 
@@ -76,7 +94,7 @@ var forecast = new Forecast({
 
 // =======================================================================================
 
-// =============================== STRIP LOGIC ===========================================
+// =============================== strip LOGIC ===========================================
 
 // =======================================================================================
 board.on("ready", function() {
@@ -86,31 +104,31 @@ board.on("ready", function() {
 		strips: [ {pin: 6, length: 150}]
 	});
 
-    strip.on("ready", function() {
-        // Display time every second
-        new CronJob('* * * * * *', function() {
-            var d = new Date();
-            showTime(d, 16);
-            pushData();
-        }, null, true, 'America/Los_Angeles');
+    WhiteLED = new five.Led(12);
 
-        // Have to run this once on startup. Could pack this up to a function tho
+    strip.on("ready", function() {
         forecast.get([42.2626, -71.8023], function(err, weather) {
             if (err) console.log(err);
             showWeather(weather, 0);
-            weatherGlobal = weather;
-            pushData();
+            WeatherGlobal = weather;
         })
 
-        // Display weather every hour
-        new CronJob('0 * * * * *', function() {
-            forecast.get([42.2626, -71.8023], function(err, weather) {
-                if (err) console.log(err);
-                showWeather(weather, 0);
-                weatherGlobal = weather;
-                pushData();
-            })
-        })
+        // Display time every second
+        var mainInterval = setInterval(function() {
+            Counter++;
+            var d = new Date();
+            showTime(d, 16);
+
+            if(Counter == 3600) { // Count to the hour
+                forecast.get([42.2626, -71.8023], function(err, weather) {
+                    if (err) console.log(err);
+                    showWeather(weather, 0);
+                    WeatherGlobal = weather;
+                })
+                Counter = 0;
+            }
+            pushData();
+        }, 1000);
 
         // Handle socket connection with front-end
         io.on('connection', function(socket) {
@@ -126,8 +144,13 @@ board.on("ready", function() {
                 pushData();
             });
 
-            io.on('load', function() {
-                io.sockets.emit('load', colorGlobal);
+            socket.on('load', function() {
+                io.sockets.emit('load', ColorGlobal);
+            })
+
+            socket.on('secondary', function() {
+                console.log("EVENT RECEIVED TO TOGGLE SECONDARY LIGHTS");
+                WhiteLED.toggle();
             })
         // Update both strip and front-end
     })
@@ -147,9 +170,9 @@ function updateColor(color) {
     for (var i=36;i<150;i++) {
         strip.pixel(i).color(color);
     }
-    colorGlobal = color;
-    if (weatherGlobal) {
-        showWeather(weatherGlobal, 0);
+    ColorGlobal = color;
+    if (WeatherGlobal) {
+        showWeather(WeatherGlobal, 0);
     }
 }
 
@@ -175,8 +198,8 @@ function showTime(date, startPixel) { //Best function name 2016
 
     timeStr =  "-" + hours + "-" + minutes + "-" + seconds;
 
-    if (colorGlobal) {
-        var separator = colorGlobal.toHSL();
+    if (ColorGlobal) {
+        var separator = ColorGlobal.toHSL();
         if (1-separator[0] == separator[0]) {
             var separatorHex = "black";
         } else var separatorHex = [1-separator[0],separator[1],separator[2]].toHex();    
@@ -188,7 +211,7 @@ function showTime(date, startPixel) { //Best function name 2016
             strip.pixel(i+startPixel).color('black');
             break;
             case '1':
-            strip.pixel(i+startPixel).color(colorGlobal || "white");
+            strip.pixel(i+startPixel).color(ColorGlobal || "white");
             break;
             case '-':
             strip.pixel(i+startPixel).color(separatorHex || 'navy');
@@ -228,8 +251,8 @@ function showWeather(weather, startPixel) {
 
 // I wish I'm never a parent cause I'm horrible at naming stuff.
 function colorScale(index, magnitude) {
-    if (colorGlobal) {
-        var temp_color = colorGlobal.toHSL();
+    if (ColorGlobal) {
+        var temp_color = ColorGlobal.toHSL();
         var temp_color_2 = [index.map(0,12,0.725,0), 1, temp_color[2]*magnitude];
         return temp_color_2.toHex();
     }
@@ -313,7 +336,7 @@ function dynamicRainbow( delay ){
 
     var showColor;
         var cwi = 0; // colour wheel index (current position on colour wheel)
-        rainbowInterval = setInterval(function(){
+        RainbowInterval = setInterval(function(){
             if (++cwi > 255) {
                 cwi = 0;
             }

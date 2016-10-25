@@ -1,29 +1,54 @@
 var svgContainer;
 var socket;
 
+const rectSize = screen.width/36;
+const divider = 2;
+
 window.onload = function() {
-	socket = io();
 
-	socket.emit('load');
-	socket.on('load', function(cwColor) {
-		cw.color(cwColor);
-	})
+	console.log(jQuery.Color("red"));
 
-	var cw = Raphael.colorwheel($(".colorwheel")[0], 300, 180);
- 	cw.onchange(function(color) {
- 		socket.emit('setColor', gammaCorrection(color.hex));
- 	})
+	// socket = io();
 
-	svgContainer = d3.select("body").append("svg")
-	.attr("width", 1000)
-	.attr("height", 1000);
+	// socket.emit('load');
+	// socket.on('load', function(cwColor) {
+	// 	cw.color(cwColor);
+	// })
 
-	socket.on('colorData', function(data) {
-		// cw.color(data[149].hexcode);
-		console.log(data[149].hexcode);
-		update(data);
-	})
+	// var cw = Raphael.colorwheel($(".colorwheel")[0], 300, 180);
+ 	// 	cw.onchange(function(color) {
+ 	// 		socket.emit('setColor', gammaCorrection(color.hex));
+ 	// 	})
+
+	svgContainer = d3.select("#mainDisplay").append("svg")
+	.classed("svg-container", true) //container class to make it responsive
+   	.append("svg")
+   	//responsive SVG needs these 2 attributes and no width and height attr
+   	.attr("preserveAspectRatio", "xMinYMin meet")
+   	.attr("viewBox", "0 0 1000 600")
+   	//class to make it responsive
+   	.classed("svg-content-responsive", true); 
+
+	update(initColors());
+	update(initColors());
+
+	// socket.on('colorData', function(data) {
+	// 	// cw.color(data[149].hexcode);
+	// 	console.log(data[149].hexcode);
+	// 	update(data);
+	// })
 }
+
+function initColors() {
+	var initArray = new Array(),
+		item = {hexcode : '#ff0000'};
+
+	for(var i=0;i<36;i++){
+		initArray.push(item);
+	}
+
+	return initArray;
+};
 
 function toggleSecondary() {
 	console.log("sent request to toggle secondary light");
@@ -40,22 +65,21 @@ function update(colors) {
 	.data(colors);
 
 	rects.style("fill", function(d) {
-		// console.log(gammaCorrection(d.hexcode));
 		return d.hexcode;
 	})
 
 	rects.enter().append("rect")
 	.attr("x", function(d, i) {
-		return i%36*27;
+		return i%36*(rectSize+divider);
 	})
 	.attr("y", function(d, i) {
-		return parseInt(i/36)*27;
+		return parseInt(i/36)*(rectSize+divider);
 	})
 	.attr("width", function(d) {
-		return 25;
+		return rectSize;
 	})
 	.attr("height", function(d) {
-		return 25;
+		return rectSize;
 	})
 
 	rects.exit().remove();

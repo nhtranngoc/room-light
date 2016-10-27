@@ -7,13 +7,7 @@ const divider = 2;
 window.onload = function() {
 	socket = io();
 
-	socket.emit('load');
-	// socket.on('load', function(cwColor) {
-	// 	cw.color(cwColor);
-	// })
-
 	var	sliders = document.getElementsByClassName('sliders');
-
 	for ( var i = 0; i < sliders.length; i++ ) {
 
 		noUiSlider.create(sliders[i], {
@@ -48,6 +42,20 @@ window.onload = function() {
 		});
 	}
 
+	socket.emit('load');
+	socket.on('load', function(cwColor) {
+		if(cwColor == null) {
+			currentColor = jQuery.Color("#000000")	;
+		} else {
+			currentColor = jQuery.Color(cwColor);
+		}
+
+		sliders[0].noUiSlider.set(currentColor.hue());
+		sliders[1].noUiSlider.set(currentColor.saturation()*255);
+		sliders[2].noUiSlider.set(currentColor.lightness()*255);
+		document.body.style.background = currentColor.toHexString();
+	})
+
  	svgContainer = d3.select("#mainDisplay").append("svg")
 	.classed("svg-container", true) //container class to make it responsive
 	.append("svg")
@@ -57,29 +65,24 @@ window.onload = function() {
    	//class to make it responsive
    	.classed("svg-content-responsive", true); 
 
-   	update(initColors());
-   	update(initColors());
-
 	socket.on('colorData', function(data) {
-		console.log(data[149].hexcode);
+		document.body.style.background = data[149].hexcode;
 		update(data);
 	})
 }
 
-function initColors() {
-	var initArray = new Array(),
-	item = {hexcode : '#ff0000'};
-
-	for(var i=0;i<36;i++){
-		initArray.push(item);
+function toggle(c) {
+	switch(c){
+		case "primary":
+			socket.emit('primary');
+		break;
+		case "secondary":
+			socket.emit('secondary');
+		break;
+		case "sleep":
+			socket.emit('sleep', true);
+		break;
 	}
-
-	return initArray;
-};
-
-function toggleSecondary() {
-	console.log("sent request to toggle secondary light");
-	socket.emit('secondary');
 }
 
 function update(colors) {

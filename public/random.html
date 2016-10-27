@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Random</title>
+	<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+	<script src="https://code.jquery.com/jquery-2.1.0.min.js" type="text/javascript"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js"></script>
+</head>
+<body>
+	<script type="text/javascript">
+		window.onload = function() {
+		const FPS = 60; // Have to lock this at 12FPS 
+		window.STRIP_LENGTH = 114;
+		socket = io();
+
+		var counter = 0;
+		setInterval(function() {
+			counter++;
+			if (counter > window.STRIP_LENGTH) {
+				counter = 0;
+			};
+
+			socket.emit('setStripColor', pingpong(counter));
+		}, 1000/FPS)
+	}
+
+	function randomFrame() {
+		frame = new Array();
+		for (var i=0;i<window.STRIP_LENGTH;i++) {
+			color = jQuery.Color({
+				hue: Math.floor(Math.random()*360),
+				saturation: Math.random().toPrecision(3),
+				lightness: Math.random().toPrecision(3),
+				alpha: 1
+			})				
+			frame.push(color.toHexString());
+		}
+		return frame;
+	}
+
+	function pingpong(i) { //chingchong
+		frame = new Array();
+
+		for (var j=0;j<window.STRIP_LENGTH;j++) {
+			if (j === i) {
+				frame.push("#ff00ff");
+			} else frame.push("#000000");
+		}
+
+		return frame;
+	}
+
+</script>
+</body>
+</html>

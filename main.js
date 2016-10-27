@@ -94,7 +94,7 @@ var forecast = new Forecast({
 
 // =======================================================================================
 
-// =============================== strip LOGIC ===========================================
+// =============================== STRIP LOGIC ===========================================
 
 // =======================================================================================
 board.on("ready", function() {
@@ -132,15 +132,39 @@ board.on("ready", function() {
 
         // Handle socket connection with front-end
         io.on('connection', function(socket) {
-            console.log(socket.id);
 
-            socket.on('setColor', function(colorString) {
-                console.log("Setting color " + colorString);
-                updateColor(colorString);
+            //Set LED color, either for the whole string, or for one pixel. Pixel starts at 36-114
+            //@colorString Hex string for pixel color
+            //@p [optional] Pixel to change
+            socket.on('setColor', function(colorString, p) {
+                var p = (typeof p !== 'undefined') ?  p : null;
+
+                if(p !== null){
+                    console.log("Setting color " + colorString + " for pixel " + pixel);
+                    if(p>150 || p<0){
+                        io.sockets.emit('error', "Invalid pixel value");
+                    } else {
+                        strip.pixel(p+36).color(colorString);
+                    }
+                } else { //Update the whole string if no pixels are specified.
+                    console.log("Setting color " + colorString);
+                    updateColor(colorString);
+                }
                 pushData();
             });
 
-            socket.on('getColor', function() {
+            socket.on('setStripColor', function(colorArray) {
+                if(colorArray.length > 114) {
+                    colorArray = colorArray.slice(0,114); //Make sure it doesn't exceed the strip
+                }
+
+                for (var i = 0, len = colorArray.length; i < len; i++) {
+                    strip.pixel(i+36).color(colorArray[i]);
+                }
+                pushData();
+            })
+
+            socket.on('getColor', function(p) {
                 pushData();
             });
 
@@ -149,8 +173,34 @@ board.on("ready", function() {
             })
 
             socket.on('secondary', function() {
-                console.log("EVENT RECEIVED TO TOGGLE SECONDARY LIGHTS");
                 WhiteLED.toggle();
+            })
+
+            socket.on('primary', function() {
+                var stateOn = strip.pixel(149).color().hexcode == "#000000" ? false : true;
+                console.log(strip.pixel(149).color().hexcode);
+
+                if (stateOn) {
+                    updateColor("#000000");
+                    pushData();
+                } else {
+                    updateColor("#ffffff");
+                    pushData();
+                }
+            })
+
+            socket.on('sleep', function(start) {
+                if (start) {
+                    console.log("GO TO SLEEP PLS");
+                    updateColor("#00000C");
+                    pushData();
+                    WhiteLED.off();
+                } else {
+                    console.log("WAKE UP SUNSHINE");
+                    updateColor("#ffffff");
+                    pushData();
+                    WhiteLED.on();
+                }
             })
         // Update both strip and front-end
     })
@@ -200,10 +250,12 @@ function showTime(date, startPixel) { //Best function name 2016
 
     if (ColorGlobal) {
         var separator = ColorGlobal.toHSL();
-        if (1-separator[0] == separator[0]) {
-            var separatorHex = "black";
-        } else var separatorHex = [1-separator[0],separator[1],separator[2]].toHex();    
-    } else var separatorHex = "navy";
+        if (separator[0] > 0.66) {
+            var separatorHex = [separator[0]-0.33, separator[1], separator[2]/2].toHex();
+        } else {
+            var separatorHex = [separator[0]+0.33, separator[1], separator[2]/2].toHex();
+        }    
+    }
     
     for (var i = 0; i < timeStr.length; i++) {
         switch(timeStr[i]) {
@@ -328,48 +380,4 @@ Array.prototype.toHex = function() {
     + ("00".substr(0, 2 - r.length)+r) 
     + ("00".substr(0, 2 - g.length)+g) 
     + ("00".substr(0, 2 - b.length)+b);
-}
-
-// Create a dynamic rainbow
-function dynamicRainbow( delay ){
-    console.log( 'dynamicRainbow' );
-
-    var showColor;
-        var cwi = 0; // colour wheel index (current position on colour wheel)
-        RainbowInterval = setInterval(function(){
-            if (++cwi > 255) {
-                cwi = 0;
-            }
-
-            for(var i = 0; i < strip.stripLength(); i++) {
-                showColor = colorWheel( ( cwi+i ) & 255 );
-                strip.pixel( i ).color( showColor );
-            }
-            pushData();
-        }, 1000/delay);
-    }
-
-// Input a value 0 to 255 to get a color value.
-// The colors are a transition r - g - b - back to r.
-function colorWheel( WheelPos ){
-    var r,g,b;
-    WheelPos = 255 - WheelPos;
-
-    if ( WheelPos < 85 ) {
-        r = 255 - WheelPos * 3;
-        g = 0;
-        b = WheelPos * 3;
-    } else if (WheelPos < 170) {
-        WheelPos -= 85;
-        r = 0;
-        g = WheelPos * 3;
-        b = 255 - WheelPos * 3;
-    } else {
-        WheelPos -= 170;
-        r = WheelPos * 3;
-        g = 255 - WheelPos * 3;
-        b = 0;
-    }
-    // returns a string with the rgb value to be used as the parameter
-    return "rgb(" + r +"," + g + "," + b + ")";
 }

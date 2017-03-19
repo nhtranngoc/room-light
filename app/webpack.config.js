@@ -14,13 +14,13 @@ module.exports = {
     publicPath: "/build"
 	},
   	resolve: {
-    	extensions: ['*', '.js', '.jsx', '.json', ""]
+    	extensions: ['*', '.js', '.jsx', '.json']
   	},
   	module: {
     	loaders: [{
       	test: /\.jsx?$/,
       	exclude: /node_modules/,
-      	loader: ['babel-loader', 'rc-slider']
+      	loader: ['babel-loader']
     	}]
   },
   plugins: [HtmlWebpackPluginConfig]

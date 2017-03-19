@@ -1,10 +1,12 @@
 import React from 'react';
+import Slider from 'react-rangeslider';
 
 export default class App extends React.Component {
   render() {
     return (
-     <div style={{textAlign: 'center'}}>
-        <h1>Hello World </h1>
-      </div>);
+    	<div>
+    		Hello World
+    	</div>
+	);
   }
 }

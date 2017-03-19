@@ -7,7 +7,8 @@
   "author": "Nam Tran Ngoc",
   "license": "MIT",
   "scripts": {
-    "start": "webpack-dev-server"
+    "start": "webpack-dev-server --hot",
+    "build": "webpack -p"
   },
   "devDependencies": {
     "babel-core": "^6.23.1",
@@ -18,6 +19,7 @@
     "webpack": "^2.2.1"
   },
   "dependencies": {
+    "path": "^0.12.7",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "webpack-dev-server": "^2.4.1"

@@ -76,26 +76,44 @@ void callback(char* topic, byte* payload, unsigned int length) {
     // Set universal color for the whole strip
     // Payload is a buffer with 3 hex colors in rgb order;
     // @TODO: Work on payload validation.
-    for (int i=36; i<NUM_LEDS; i++) {
-      leds[i].r = payload[0];
-      leds[i].g = payload[1];
-      leds[i].b = payload[2];
+    fill_solid(leds, NUM_LEDS, CRGB(payload[0],payload[1],payload[2]));
+    FastLED.show();
+  }
+  
+  if (strcmp(topic, "/esp/stripH")==0) {
+    //Same as /esp/strip, but payload is a literal string of Hex color. To use with existing MQTT app.
+    int color = atoi((char*)payload);
+    fill_solid(leds, NUM_LEDS, CRGB(color));
+    FastLED.show();
+  }
+
+  //Make sure to change payload size to at least NUM_LEDS*3 to accomodate frame transfer (can be found in PubSubClient.h)
+  if (strcmp(topic, "/esp/pixels")==0) {
+    // Set different colors for each pixel
+    // Payload is a buffer of 342 bytes, containing rgb values for the LEDs
+    for (int i=0;i<NUM_LEDS;i++) {
+      leds[i].r = payload[i*3];
+      leds[i].g = payload[i*3+1];
+      leds[i].b = payload[i*3+2];
     }
     FastLED.show();
   }
 
-  if (strcmp(topic, "/esp/pixels")==0) {
-    // Set different colors for each pixel
-    // Payload is a buffer of 342 bytes, containing rgb values for the LEDs
-    int currentLED = 36;
-    for (int i=0;i<114;i++) {
-      leds[currentLED].r = payload[i*3];
-      leds[currentLED].g = payload[i*3+1];
-      leds[currentLED].b = payload[i*3+2];
-      currentLED++;
+  //Generalize this for use with the existing MQTT app
+  if (strcmp(topic, "/esp/switch")==0) {
+    if ((payload[0] == 0x00) || ((char*)payload == "0")) {
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+    } else if ((payload[0] == 0x01) || ((char*)payload == "1")){
+      fill_solid(leds, NUM_LEDS, CRGB::White);
     }
     FastLED.show();
   }
+
+  if (strcmp(topic, "/esp/gradient")==0) {
+    fill_gradient_RGB(leds, (uint16_t)payload[0], CRGB(payload[1],payload[2],payload[3]), (uint16_t)payload[4], CRGB(payload[5],payload[6],payload[7]));
+    FastLED.show();
+  }
+  
   fpsCounter++;
 }
 

@@ -1,7 +1,7 @@
 var mqtt = require('mqtt');
-var client  = mqtt.connect('mqtt://192.168.1.9:1883');
+var client  = mqtt.connect('mqtt://192.168.1.10:1883');
 
-const fps = 60;
+const fps = 12;
 
 Array.prototype.forEach = function(callback) {
   var i = 0;
@@ -137,7 +137,7 @@ var Strip = function(length) {
 	}
 }
 
-var world1 = new Strip(114);
+var world1 = new Strip(150);
 world1.init();
 
 // world1.getCell(57).rise();
@@ -147,6 +147,7 @@ client.on('connect', function () {
 	client.subscribe('/lwt');
 	
 	setInterval(function() {
+		console.log("tick");
 		client.publish("/esp/pixels", world1.export());
 		world1.tick();	
 }, 1000/fps)

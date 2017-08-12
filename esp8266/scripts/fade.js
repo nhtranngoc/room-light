@@ -1,8 +1,8 @@
 var mqtt = require('mqtt');
-var client  = mqtt.connect('mqtt://192.168.1.9:1883');
+var client  = mqtt.connect('mqtt://192.168.1.10:1883');
 var Color = require('tinycolor2');
 
-const stripLength = 114;
+const stripLength = 150;
 const fps = 60;
 
 //Copied this from StackOverflow cause I'm lazy.
@@ -49,8 +49,8 @@ client.on('connect', function () {
 	client.subscribe('/lwt');
 
 	// Create the initial gradient
-	for (i=0;i<114;i++) {
-		var gradient = Color({h: i.map(0, 114, start.h, end.h), s: start.s, l:start.l});
+	for (i=0;i<stripLength;i++) {
+		var gradient = Color({h: i.map(0, stripLength, start.h, end.h), s: start.s, l:start.l});
 		colorArray = colorArray.concat(gradient);
 	} 
 

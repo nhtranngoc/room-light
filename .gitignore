@@ -1,6 +1,8 @@
 *_files/
-public/LED controller.html
+app/build/
+
 bower_components/
+
 
 esp8266/src/mqtt_fastled/secrets.h
 

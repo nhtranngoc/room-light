@@ -23,5 +23,9 @@ module.exports = {
       	loader: ['babel-loader']
     	}]
   },
-  plugins: [HtmlWebpackPluginConfig]
+  plugins: [HtmlWebpackPluginConfig],
+  devServer: {
+    contentBase: "./build",
+    hot: true
+  }
 };

@@ -37,6 +37,6 @@ io.on('connection', (socket) => {
 
 });
 
-server.listen(3000,function(req,res) {
+server.listen(80,function(req,res) {
 	console.log("App is now live.");
 });

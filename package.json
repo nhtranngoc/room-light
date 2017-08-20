@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "rc-slider": "^6.2.0"
-  },
-  "devDependencies": {
-    "react-rangeslider": "^2.0.1"
-  }
-}

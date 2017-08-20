@@ -1,5 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './components/App.jsx';
+import SliderComponent from './components/SliderComponent.jsx';
+import Banner from './components/Banner.jsx';
+import './index.css';
 
-ReactDOM.render(<App />, document.getElementById('app'));
+ReactDOM.render(
+	<div>
+		<Banner />
+		<SliderComponent />
+	</div>
+	, document.getElementById('root'));

@@ -1,0 +1,61 @@
+@import url("https://fonts.googleapis.com/css?family=Raleway");
+
+html {
+	width:100%;
+	height:100%;
+}
+body {
+  font: 14px "Century Gothic", Futura, sans-serif;
+  margin: 20px;
+  width:inherit;
+  height: inherit;
+  background-color: #f5e6e6;
+}
+
+#banner {
+	font-size: xx-large;
+	font-family: 'Raleway', sans-serif;
+	color: gray;
+	text-align: center;
+}
+
+/*"This will not scale. Use flexbox instead" - Ivan, 2017*/
+#root {
+	margin: 0 auto;
+	top: 50%;
+	width:300px;
+	height:300px;
+	position: relative;
+	transform: translateY(-50%);
+}
+#container {
+	overflow:hidden;
+	width:250px;
+	height:250px;
+	display: flex;
+	align-items: center;
+	flex-flow: column;
+}
+#circle {
+	border-radius: 50%;
+	width:200px;
+	height:200px;
+	background-color: #d85d5d;
+	position:absolute;
+	margin:auto;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0;
+}
+#sliders {
+	position:relative;
+	margin:auto;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0;
+	width:100px;
+
+	padding-left: 50px;
+}

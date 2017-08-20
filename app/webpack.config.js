@@ -4,7 +4,7 @@ const HtmlWebpackPluginConfig = new HtmlWebpackPlugin({
   template: './src/index.html',
   filename: 'index.html',
   inject: 'body'
-})
+});
 
 module.exports = {
 	entry: './src/index.jsx',
@@ -14,14 +14,18 @@ module.exports = {
     publicPath: "/build"
 	},
   	resolve: {
-    	extensions: ['*', '.js', '.jsx', '.json']
+    	extensions: ['*', '.js', '.jsx', '.json', '.css']
   	},
   	module: {
     	loaders: [{
       	test: /\.jsx?$/,
       	exclude: /node_modules/,
       	loader: ['babel-loader']
-    	}]
+    	},
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"]
+      }]
   },
   plugins: [HtmlWebpackPluginConfig],
   devServer: {

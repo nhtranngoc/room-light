@@ -2,6 +2,10 @@ import React from 'react';
 import ReactDOM from "react-dom";
 import Slider, { Range } from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { SocketProvider } from 'socket.io-react';
+import io from 'socket.io-client';
+
+const socket = io.connect("192.168.1.10:3000");
 
 export default class SliderComponent extends React.Component {
 	constructor() {
@@ -37,6 +41,9 @@ export default class SliderComponent extends React.Component {
 		console.log(bgColor);
 		document.body.style.backgroundColor = bgColor;
 		document.getElementById('circle').style.backgroundColor = fgColor;
+
+		socket.emit('hsl',fgColor);
+
 	};
 
 	render() {

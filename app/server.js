@@ -31,34 +31,33 @@ app.get("/", (req, res) => {
 });
 
 app.get("/sleepytime", (req, res) => {
-	console.log(curColor);
-
+	let targetColor = tinyColor({h:188, s: 1, v: .1})
 	if (curColor) {
-		let dimArray = dim(curColor, tinyColor({h: 188, s: 1, v: .1}));
-
-		let counter = 0;
-		let interval = setInterval(() => {
-			if (counter < amount){
-				client.publish("/esp/strip", tinyColor(dimArray[counter].toString(16)).toBuffer());
-				counter++;
-			} else {
-				clearInterval(interval);
-			}
-		}, 1000/60);
-
+		colorTransition(curColor, targetColor);
+		curColor = targetColor;
 		res.sendStatus(200);
 	} else {
 		res.sendStatus(204);
 	}
-
 });
+
+app.get("/wakeytime", (req, res) => {
+	let targetColor = tinyColor({h:0, s:1, v:1});
+	if (curColor) {
+		colorTransition(curColor, targetColor);
+		curColor = targetColor;
+		res.sendStatus(200);
+	} else {
+		res.sendStatus(204);
+	}
+})
 
 io.on('connection', (socket) => {
 	console.log("Socket opened..");
 
 	socket.on('hsl', (hslObject) => {
 		curColor = tinyColor(hslObject);
-		console.log(curColor.toHsv());
+		// console.log(curColor.toHsv());
 		client.publish("/esp/strip", curColor.toBuffer());
 	})
 
@@ -72,7 +71,7 @@ tinyColor.prototype.toBuffer = function() {
 	return new Buffer.from([this._r, this._g, this._b]);
 }
 
-// Basically a gradient function
+// Basically a gradient function, returns an array of intermediate color
 // Also color manipulating is a b*
 function dim(colorA, colorB) {
 	let colorArray  = [];
@@ -113,6 +112,18 @@ function dim(colorA, colorB) {
 		colorArray.push(tinyColor(newColor))
 	}
 
-
 	return colorArray;
+}
+
+function colorTransition(colorA, colorB) {
+	let dimArray = dim(colorA, colorB);
+	let counter = 0;
+	let interval = setInterval(() => {
+		if (counter < amount) {
+			client.publish("/esp/strip", tinyColor(dimArray[counter].toString(16)).toBuffer());
+			counter++;
+		} else {
+			clearInterval(interval);
+		}
+	}, 1000/60);
 }

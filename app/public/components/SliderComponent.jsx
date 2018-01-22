@@ -5,7 +5,7 @@ import 'rc-slider/assets/index.css';
 import { SocketProvider } from 'socket.io-react';
 import io from 'socket.io-client';
 
-const socket = io.connect("192.168.1.10:3000");
+const socket = io.connect("http://192.168.1.8");
 
 export default class SliderComponent extends React.Component {
 	constructor() {
@@ -38,7 +38,7 @@ export default class SliderComponent extends React.Component {
 		var complementH = ((this.state.h*2.55)+127.5) > 255 ? this.state.h-127.5 : this.state.h+127.5;
 		var fgColor = "hsl("+ this.state.h*2.55 + "," + this.state.s + "%," + this.state.l+"%)";
 		var bgColor = "hsl("+complementH + ",14%,88%)"; 
-		console.log(bgColor);
+		console.log(fgColor);
 		document.body.style.backgroundColor = bgColor;
 		document.getElementById('circle').style.backgroundColor = fgColor;
 

@@ -90,7 +90,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   //Make sure to change payload size to at least NUM_LEDS*3 to accomodate frame transfer (can be found in PubSubClient.h)
   if (strcmp(topic, "/esp/pixels")==0) {
     // Set different colors for each pixel
-    // Payload is a buffer of 342 bytes, containing rgb values for the LEDs
+    // Payload is a buffer of 450 bytes, containing rgb values for the LEDs
+    Serial.println(payload[0]);
     for (int i=0;i<NUM_LEDS;i++) {
       leds[i].r = payload[i*3];
       leds[i].g = payload[i*3+1];
@@ -129,6 +130,8 @@ void reconnect() {
       // ... and resubscribe
       client.subscribe("/esp/strip");
       client.subscribe("/esp/pixels");
+      client.subscribe("/esp/switch");
+      client.subscribe("/esp/gradient");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());

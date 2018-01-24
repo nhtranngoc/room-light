@@ -14,9 +14,11 @@ const webpackHotMiddleware = require('webpack-hot-middleware')
 const webpackConfig = require('./webpack.config.js')
 
 const compiler = webpack(webpackConfig)
-const duration = 10000, fps = 175
+const duration = 5000
+const fps = 175
 const amount = parseInt(fps * duration / 1000)
 let curColor
+let breathingFlag = false
 
 app.use(webpackDevMiddleware(compiler, {
   publicPath: webpackConfig.output.publicPath,
@@ -31,7 +33,7 @@ app.get('/', (req, res) => {
 
 app.get('/sleepytime', (req, res) => {
   breathingFlag = false
-  let targetColor = tinyColor({h: 188, s: 1, v: 0.01})
+  let targetColor = tinyColor({h: 188, s: 1, l: 0.01})
   if (curColor) {
     colorTransition(curColor, targetColor)
     curColor = targetColor
@@ -43,7 +45,7 @@ app.get('/sleepytime', (req, res) => {
 
 app.get('/test', (req, res) => {
   if (curColor) {
-    breathing()
+    breathing(Math.PI / 2000, 0.55, 0.05)
     res.sendStatus(200)
   } else {
     res.sendStatus(204)
@@ -57,7 +59,7 @@ app.get('/test2', (req, res) => {
 
 app.get('/wakeytime', (req, res) => {
   breathingFlag = false
-  let targetColor = tinyColor({h: 0, s: 1, v: 1})
+  let targetColor = tinyColor({h: curColor.toHsl().h, s: 1, l: 1})
   if (curColor) {
     colorTransition(curColor, targetColor)
     curColor = targetColor
@@ -82,14 +84,19 @@ server.listen(80, function (req, res) {
 })
 
 tinyColor.prototype.toBuffer = function () {
-  return new Buffer.from([this._r, this._g, this._b])
+  return Buffer.from([this._r, this._g, this._b])
 }
 
 tinyColor.prototype.toArray = function () {
   return [this._r, this._g, this._b]
 }
 
-function breathing () {
+// Shamelessly stol- I mean courtersy of
+// http://sean.voisen.org/blog/2011/10/breathing-led-with-arduino/
+function breathing (timeMultiplier, range, offset) {
+  timeMultiplier = timeMultiplier || 1
+  range = range || 1
+  offset = offset || 0
   breathingFlag = true
   let startTime = new Date()
   let interval = setInterval(() => {
@@ -99,11 +106,8 @@ function breathing () {
       let newColor = {
         h: curColor.toHsl().h,
         s: curColor.toHsl().s,
-        l: Math.exp(Math.sin(timeDiff * Math.PI / 2000) - 0.367879) * 0.425459 * 0.55 + 0.05}
-      let newColor2 = {
-        l: curColor.toHsl().l,
-        s: curColor.toHsl().s,
-        h: Math.exp(Math.sin(timeDiff * Math.PI / 10000) - 0.367879) * 0.425459 * 360}
+        l: Math.exp(Math.sin(timeDiff * timeMultiplier) - 0.367879) * 0.425459 * range + offset}
+
       client.publish('/esp/strip', tinyColor(newColor).toBuffer())
     } else {
       clearInterval(interval)
@@ -116,37 +120,37 @@ function breathing () {
 function dim (colorA, colorB) {
   let colorArray = []
 
-  let aHSV = colorA.toHsv(),
-    bHSV = colorB.toHsv()
+  let aHSL = colorA.toHsl()
+  let bHSL = colorB.toHsl()
 
-  let diff = [Math.abs(aHSV.h - bHSV.h), Math.abs(aHSV.s - bHSV.s), Math.abs(aHSV.v - bHSV.v)]
+  let diff = [Math.abs(aHSL.h - bHSL.h), Math.abs(aHSL.s - bHSL.s), Math.abs(aHSL.l - bHSL.l)]
   let increment = [diff[0] / amount, diff[1] / amount, diff[2] / amount]
 
   for (let i = 1; i <= amount; i++) {
     let newColor = {h: 0, s: 0, l: 0}
 
-    if (aHSV.h > bHSV.h) {
-      newColor.h = aHSV.h - i * increment[0]
-    } else if (aHSV.h < bHSV.h) {
-      newColor.h = aHSV.h + i * increment[0]
+    if (aHSL.h > bHSL.h) {
+      newColor.h = aHSL.h - i * increment[0]
+    } else if (aHSL.h < bHSL.h) {
+      newColor.h = aHSL.h + i * increment[0]
     } else {
-      newColor.h = aHSV.h
+      newColor.h = aHSL.h
     }
 
-    if (aHSV.s > bHSV.s) {
-      newColor.s = aHSV.s - i * increment[1]
-    } else if (aHSV.s < bHSV.s) {
-      newColor.s = aHSV.s + i * increment[1]
+    if (aHSL.s > bHSL.s) {
+      newColor.s = aHSL.s - i * increment[1]
+    } else if (aHSL.s < bHSL.s) {
+      newColor.s = aHSL.s + i * increment[1]
     } else {
-      newColor.s = aHSV.s
+      newColor.s = aHSL.s
     }
 
-    if (aHSV.v > bHSV.v) {
-      newColor.l = aHSV.v - i * increment[2]
-    } else if (aHSV.v < bHSV.v) {
-      newColor.l = aHSV.v + i * increment[2]
+    if (aHSL.l > bHSL.l) {
+      newColor.l = aHSL.l - i * increment[2]
+    } else if (aHSL.l < bHSL.l) {
+      newColor.l = aHSL.l + i * increment[2]
     } else {
-      newColor.l = aHSV.v
+      newColor.l = aHSL.l
     }
 
     colorArray.push(tinyColor(newColor))

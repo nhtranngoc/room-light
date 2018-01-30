@@ -1,6 +1,7 @@
 const path = require('path')
 const express = require('express')
 const app = express()
+const bodyParser = require('body-parser')
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 
@@ -27,6 +28,9 @@ app.use(webpackDevMiddleware(compiler, {
 
 app.use(webpackHotMiddleware(compiler))
 
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded())
+
 app.get('/', (req, res) => {
   res.sendFile(path.resolve(compiler.outputPath, 'index.html'))
 })
@@ -44,7 +48,7 @@ app.get('/sleepytime', (req, res) => {
 })
 
 app.get('/test', (req, res) => {
-  if (curColor) {
+  if (curColor && breathingFlag === false) {
     breathing(Math.PI / 2000, 0.55, 0.05)
     res.sendStatus(200)
   } else {
@@ -54,6 +58,7 @@ app.get('/test', (req, res) => {
 
 app.get('/test2', (req, res) => {
   breathingFlag = false
+  client.publish('/esp/pixels', Buffer.from(Array(450).fill(127)))
   res.sendStatus(200)
 })
 
@@ -67,6 +72,26 @@ app.get('/wakeytime', (req, res) => {
   } else {
     res.sendStatus(204)
   }
+})
+
+app.get('/kat', (req, res) => {
+	if (curColor && breathingFlag === false) {
+		let katColor = tinyColor({h:0,s:.66,l:.34});
+		colorTransition(curColor, katColor)
+		setTimeout(() => {breathing(Math.PI/2000, 0.25, 0.15)},duration*2)
+		curColor = katColor
+		res.sendStatus(200)
+	} else {
+		res.sendStatus(204)
+	}
+
+})
+
+app.post('/flux', (req, res) => {
+	let fluxRGB = tinyColor(colorTemperatureToRGB(req.query.ct))
+	client.publish('/esp/colorTemp', Buffer.from([fluxRGB._r, fluxRGB._g, fluxRGB._b]))
+
+	res.sendStatus(200)
 })
 
 io.on('connection', (socket) => {
@@ -91,7 +116,7 @@ tinyColor.prototype.toArray = function () {
   return [this._r, this._g, this._b]
 }
 
-// Shamelessly stol- I mean courtersy of
+// Shamelessly stol- I mean courtesy of
 // http://sean.voisen.org/blog/2011/10/breathing-led-with-arduino/
 function breathing (timeMultiplier, range, offset) {
   timeMultiplier = timeMultiplier || 1
@@ -155,7 +180,6 @@ function dim (colorA, colorB) {
 
     colorArray.push(tinyColor(newColor))
   }
-
   return colorArray
 }
 
@@ -170,4 +194,46 @@ function colorTransition (colorA, colorB) {
       clearInterval(interval)
     }
   }, 1000 / fps)
+}
+
+// Use CRGB to set color temperature cause somehow I'm bad at reading documentation for FastLED
+function colorTemperatureToRGB(kelvin){
+    let temp = kelvin / 100;
+    let red, green, blue;
+
+    if( temp <= 66 ){ 
+        red = 255;         
+        green = temp;
+        green = 99.4708025861 * Math.log(green) - 161.1195681661;
+
+        if( temp <= 19){
+            blue = 0;
+        } else {
+            blue = temp-10;
+            blue = 138.5177312231 * Math.log(blue) - 305.0447927307;
+        }
+    } else {
+        red = temp - 60;
+        red = 329.698727446 * Math.pow(red, -0.1332047592);
+        
+        green = temp - 60;
+        green = 288.1221695283 * Math.pow(green, -0.0755148492 );
+
+        blue = 255;
+    }
+    return {
+        r : clamp(red,   0, 255),
+        g : clamp(green, 0, 255),
+        b : clamp(blue,  0, 255)
+    }
+}
+
+
+function clamp( x, min, max ) {
+
+    if(x<min){ return min; }
+    if(x>max){ return max; }
+
+    return x;
+
 }

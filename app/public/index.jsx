@@ -1,12 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import SliderComponent from './components/SliderComponent.jsx';
-import Banner from './components/Banner.jsx';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom";
+import Panel from "./components/Panel.jsx";
 
 ReactDOM.render(
 	<div>
-		<Banner />
-		<SliderComponent />
+		<Panel title="Power"></Panel>
+		<Panel title="f.lux"></Panel>
+		<Panel title="Fill"></Panel>
+		<Panel title="Presets"></Panel>
 	</div>
-	, document.getElementById('root'));
+, document.getElementById("root"));

@@ -29,7 +29,7 @@ app.use(webpackDevMiddleware(compiler, {
 app.use(webpackHotMiddleware(compiler))
 
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded())
+app.use(bodyParser.urlencoded({ extended: true }))
 
 app.get('/', (req, res) => {
   res.sendFile(path.resolve(compiler.outputPath, 'index.html'))
@@ -104,7 +104,7 @@ io.on('connection', (socket) => {
   })
 })
 
-server.listen(80, function (req, res) {
+server.listen(3000, function (req, res) {
   console.log('App is now live.')
 })
 

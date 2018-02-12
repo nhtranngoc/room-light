@@ -1,119 +1,119 @@
-const path = require('path')
-const express = require('express')
-const app = express()
-const bodyParser = require('body-parser')
-const server = require('http').createServer(app)
-const io = require('socket.io')(server)
+const path                 = require("path");
+const express              = require("express");
+const app                  = express();
+const bodyParser           = require("body-parser");
+const server               = require("http").createServer(app);
+const io                   = require("socket.io")(server);
 
-const mqtt = require('mqtt')
-const tinyColor = require('tinycolor2')
-const client = mqtt.connect('mqtt://192.168.1.8:1883')
+const mqtt                 = require("mqtt");
+const tinyColor            = require("tinycolor2");
+const client               = mqtt.connect("mqtt://192.168.1.8:1883");
 
-const webpack = require('webpack')
-const webpackDevMiddleware = require('webpack-dev-middleware')
-const webpackHotMiddleware = require('webpack-hot-middleware')
-const webpackConfig = require('./webpack.config.js')
+const webpack              = require("webpack");
+const webpackDevMiddleware = require("webpack-dev-middleware");
+const webpackHotMiddleware = require("webpack-hot-middleware");
+const webpackConfig        = require("./webpack.config.js");
 
-const compiler = webpack(webpackConfig)
-const duration = 5000
-const fps = 175
-const amount = parseInt(fps * duration / 1000)
-let curColor
-let breathingFlag = false
+const compiler             = webpack(webpackConfig);
+const duration             = 5000;
+const fps                  = 175;
+const amount               = parseInt(fps * duration / 1000);
+let breathingFlag          = false;
+
+let curColor;
 
 app.use(webpackDevMiddleware(compiler, {
-  publicPath: webpackConfig.output.publicPath,
-  stats: true
-}))
+	publicPath: webpackConfig.output.publicPath,
+	stats: true
+}));
 
-app.use(webpackHotMiddleware(compiler))
+app.use(webpackHotMiddleware(compiler));
 
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.resolve(compiler.outputPath, 'index.html'))
-})
+app.get("/", (req, res) => {
+	res.sendFile(path.resolve(compiler.outputPath, "index.html"));
+});
 
-app.get('/sleepytime', (req, res) => {
-  breathingFlag = false
-  let targetColor = tinyColor({h: 188, s: 1, l: 0.01})
-  if (curColor) {
-    colorTransition(curColor, targetColor)
-    curColor = targetColor
-    res.sendStatus(200)
-  } else {
-    res.sendStatus(204)
-  }
-})
+app.get("/sleepytime", (req, res) => {
+	breathingFlag = false
+	let targetColor = tinyColor({h: 188, s: 1, l: 0.01});
+	if (curColor) {
+		colorTransition(curColor, targetColor);
+		curColor = targetColor;
+		res.sendStatus(200);
+	} else {
+		res.sendStatus(204);
+	}
+});
 
-app.get('/test', (req, res) => {
-  if (curColor && breathingFlag === false) {
-    breathing(Math.PI / 2000, 0.55, 0.05)
-    res.sendStatus(200)
-  } else {
-    res.sendStatus(204)
-  }
-})
+app.get("/test", (req, res) => {
+	if (curColor && breathingFlag === false) {
+		breathing(Math.PI / 2000, 0.55, 0.05);
+		res.sendStatus(200);
+	} else {
+	res.sendStatus(204);
+	}
+});
 
-app.get('/test2', (req, res) => {
-  breathingFlag = false
-  client.publish('/esp/pixels', Buffer.from(Array(450).fill(127)))
-  res.sendStatus(200)
-})
+app.get("/test2", (req, res) => {
+	breathingFlag = false;
+	client.publish("/esp/pixels", Buffer.from(Array(450).fill(127)));
+	res.sendStatus(200);
+});
 
-app.get('/wakeytime', (req, res) => {
-  breathingFlag = false
-  let targetColor = tinyColor({h: curColor.toHsl().h, s: 1, l: 1})
-  if (curColor) {
-    colorTransition(curColor, targetColor)
-    curColor = targetColor
-    res.sendStatus(200)
-  } else {
-    res.sendStatus(204)
-  }
-})
+app.get("/wakeytime", (req, res) => {
+	breathingFlag = false;
+	let targetColor = tinyColor({h: curColor.toHsl().h, s: 1, l: 1});
+	if (curColor) {
+		colorTransition(curColor, targetColor);
+		curColor = targetColor;
+		res.sendStatus(200);
+	} else {
+		res.sendStatus(204);
+	}
+});
 
-app.get('/kat', (req, res) => {
+app.get("/kat", (req, res) => {
 	if (curColor && breathingFlag === false) {
 		let katColor = tinyColor({h:0,s:.66,l:.34});
-		colorTransition(curColor, katColor)
-		setTimeout(() => {breathing(Math.PI/2000, 0.25, 0.15)},duration*2)
-		curColor = katColor
-		res.sendStatus(200)
+		colorTransition(curColor, katColor);
+		setTimeout(() => {breathing(Math.PI/2000, 0.25, 0.15)},duration*2);
+		curColor = katColor;
+		res.sendStatus(200);
 	} else {
-		res.sendStatus(204)
+		res.sendStatus(204);
 	}
+});
 
-})
+app.post("/flux", (req, res) => {
+	let fluxRGB = tinyColor(colorTemperatureToRGB(req.query.ct));
+	client.publish("/esp/colorTemp", Buffer.from([fluxRGB._r, fluxRGB._g, fluxRGB._b]));
 
-app.post('/flux', (req, res) => {
-	let fluxRGB = tinyColor(colorTemperatureToRGB(req.query.ct))
-	client.publish('/esp/colorTemp', Buffer.from([fluxRGB._r, fluxRGB._g, fluxRGB._b]))
+	res.sendStatus(200);
+});
 
-	res.sendStatus(200)
-})
+io.on("connection", (socket) => {
+	console.log("Socket opened.");
 
-io.on('connection', (socket) => {
-  console.log('Socket opened..')
-
-  socket.on('hsl', (hslObject) => {
-    curColor = tinyColor(hslObject)
-    console.log('curColor set!')
-    client.publish('/esp/strip', curColor.toBuffer())
-  })
-})
+	socket.on("hsl", (hslObject) => {
+		curColor = tinyColor(hslObject);
+		console.log("curColor set!");
+		client.publish("/esp/strip", curColor.toBuffer());
+	});
+});
 
 server.listen(3000, function (req, res) {
-  console.log('App is now live.')
-})
+	console.log("App is now live.");
+});
 
 tinyColor.prototype.toBuffer = function () {
-  return Buffer.from([this._r, this._g, this._b])
+	return Buffer.from([this._r, this._g, this._b]);
 }
 
 tinyColor.prototype.toArray = function () {
-  return [this._r, this._g, this._b]
+	return [this._r, this._g, this._b];
 }
 
 // Shamelessly stol- I mean courtesy of
@@ -133,7 +133,7 @@ function breathing (timeMultiplier, range, offset) {
         s: curColor.toHsl().s,
         l: Math.exp(Math.sin(timeDiff * timeMultiplier) - 0.367879) * 0.425459 * range + offset}
 
-      client.publish('/esp/strip', tinyColor(newColor).toBuffer())
+      client.publish("/esp/strip", tinyColor(newColor).toBuffer())
     } else {
       clearInterval(interval)
     }
@@ -188,7 +188,7 @@ function colorTransition (colorA, colorB) {
   let counter = 0
   let interval = setInterval(() => {
     if (counter < amount) {
-      client.publish('/esp/strip', tinyColor(dimArray[counter].toString(16)).toBuffer())
+      client.publish("/esp/strip", tinyColor(dimArray[counter].toString(16)).toBuffer())
       counter++
     } else {
       clearInterval(interval)
@@ -230,10 +230,7 @@ function colorTemperatureToRGB(kelvin){
 
 
 function clamp( x, min, max ) {
-
-    if(x<min){ return min; }
-    if(x>max){ return max; }
-
-    return x;
-
+	if(x<min){ return min; }
+	if(x>max){ return max; }
+	return x;
 }

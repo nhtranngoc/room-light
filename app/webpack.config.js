@@ -1,11 +1,11 @@
 const path = require("path");
 const webpack = require("webpack");
-// const HtmlWebpackPlugin = require('html-webpack-plugin');
+// const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 // const HtmlWebpackPluginConfig = new HtmlWebpackPlugin({
-//   template: './index.html',
-//   filename: 'index.html',
-//   inject: 'body'
+//   template: "./index.html",
+//   filename: "index.html",
+//   inject: "body"
 // });
 
 const HotModuleReplacementPluginConfig = new webpack.HotModuleReplacementPlugin();
@@ -22,7 +22,7 @@ module.exports = {
 		publicPath:"/dist/"
 	},
 	resolve: {
-		extensions: ['*', '.js', '.jsx', '.json', '.css']
+		extensions: ["*", ".js", ".jsx", ".json", ".css"]
 	},
 	module: {
 		loaders:[
